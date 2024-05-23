@@ -35,7 +35,7 @@ public final class HudHandler {
                     wasHidden = false;
                 } else if (!ModConfigs.HIDE_HUD_ON_ENGINE_OFF.get()) {
                     wasHidden = false;
-                } else if (!JetpackUtils.isEngineOn(chest) && animationProgress == 0) {
+                } else if (!JetpackUtils.isEngineOn(chest) && animationProgress < 1) {
                     wasHidden = true;
                 }
 
