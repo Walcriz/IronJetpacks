@@ -15,6 +15,8 @@ public final class ModConfigs {
 	public static final ForgeConfigSpec.IntValue HUD_POSITION;
 	public static final ForgeConfigSpec.IntValue HUD_OFFSET_X;
 	public static final ForgeConfigSpec.IntValue HUD_OFFSET_Y;
+	public static final ForgeConfigSpec.BooleanValue HIDE_HUD_ON_ENGINE_OFF;
+	public static final ForgeConfigSpec.DoubleValue HUD_ANIMATION_SPEED;
 	public static final ForgeConfigSpec.BooleanValue SHOW_HUD_OVER_CHAT;
 
 	// Client
@@ -46,6 +48,12 @@ public final class ModConfigs {
 		HUD_OFFSET_Y = client
 				.comment("The Y offset for the HUD.")
 				.defineInRange("offsetY", 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
+		HIDE_HUD_ON_ENGINE_OFF = client
+				.comment("If the HUD should be hidden when the jetpack is off.")
+				.define("hideOnEngineOff", true);
+		HUD_ANIMATION_SPEED = client
+				.comment("The animation speed for the HUD. lower = slower, higher = faster. 1 is instant.")
+				.defineInRange("animationSpeed", 0.1d, 0d, 1d);
 		SHOW_HUD_OVER_CHAT = client
 				.comment("Show HUD over the chat?")
 				.define("showOverChat", false);

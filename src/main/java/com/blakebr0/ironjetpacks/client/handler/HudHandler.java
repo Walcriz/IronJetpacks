@@ -14,10 +14,14 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import org.joml.Math;
 
 public final class HudHandler {
     private static final ResourceLocation HUD_TEXTURE = new ResourceLocation(IronJetpacks.MOD_ID, "textures/gui/hud.png");
 
+    // Animation progress = 0 means that the hud is currently shown, 1 for hidden
+    private static double animationProgress = 0;
+    private static boolean wasHidden = false;
     private static final IGuiOverlay HUD_OVERLAY = (gui, gfx, partialTick, width, height) -> {
         var mc = Minecraft.getInstance();
         if (mc.player != null && isVisible(mc)) {
@@ -25,7 +29,24 @@ public final class HudHandler {
             var item = chest.getItem();
 
             if (!chest.isEmpty() && item instanceof JetpackItem) {
-                var pos = getHudPos();
+
+                // Check if hud should be hidden
+                if (ModConfigs.HIDE_HUD_ON_ENGINE_OFF.get() && JetpackUtils.isEngineOn(chest) && animationProgress > 0) {
+                    wasHidden = false;
+                } else if (!ModConfigs.HIDE_HUD_ON_ENGINE_OFF.get()) {
+                    wasHidden = false;
+                } else if (!JetpackUtils.isEngineOn(chest) && animationProgress == 0) {
+                    wasHidden = true;
+                }
+
+                // Animate the hud
+                var animationStep = wasHidden ? ModConfigs.HUD_ANIMATION_SPEED.get() : -ModConfigs.HUD_ANIMATION_SPEED.get();
+                animationProgress = Math.clamp(0, animationStep + animationProgress, 1);
+
+                if (animationProgress == 1)
+                    return;
+
+                var pos = getHudPos(animationProgress);
                 if (pos != null) {
                     int xPos = (int) (pos.x / 0.33) - 18;
                     int yPos = (int) (pos.y / 0.33) - 78;
@@ -56,6 +77,9 @@ public final class HudHandler {
                         gfx.drawString(mc.font, hover, pos.x + 6, pos.y + 14, 16383998);
                     }
                 }
+            } else {
+                wasHidden = true;
+                animationProgress = 1;
             }
         }
     };
@@ -65,12 +89,12 @@ public final class HudHandler {
         event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "jetpack_hud", HUD_OVERLAY);
     }
 
-    private static HudPos getHudPos() {
+    private static HudPos getHudPos(double animationProgress) {
         var window = Minecraft.getInstance().getWindow();
         int xOffset = ModConfigs.HUD_OFFSET_X.get();
         int yOffset = ModConfigs.HUD_OFFSET_Y.get();
 
-        return switch (ModConfigs.HUD_POSITION.get()) {
+        var pos = switch (ModConfigs.HUD_POSITION.get()) {
             case 0 -> new HudPos(10 + xOffset, 30 + yOffset, 0);
             case 1 -> new HudPos(10 + xOffset, window.getGuiScaledHeight() / 2 + yOffset, 0);
             case 2 -> new HudPos(10 + xOffset, window.getGuiScaledHeight() - 30 + yOffset, 0);
@@ -82,6 +106,18 @@ public final class HudHandler {
             default -> null;
         };
 
+        if (pos == null)
+            return null;
+
+        pos.x = getOffset(pos, animationProgress);
+        return pos;
+    }
+
+    private static int getOffset(HudPos pos, double progress) {
+        if (pos.side == 0)
+            return (int) (pos.x - progress * 70);
+        else
+            return (int) (pos.x + progress * 70);
     }
 
     private static int getEnergyBarScaled(ItemStack stack) {
